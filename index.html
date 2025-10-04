@@ -3,69 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Date & Countdown Tracker</title>
+    <title>Time Flux</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Font: Caveat (Handwritten Script) -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script> 
+    <!-- Tone.js for Sound Effects (Alarm Chime) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     
     <style>
         /* --- CSS Variables for Theming --- */
+        /* Default: Soft Sage/Olive Light Theme (Low Contrast) */
         :root {
-            /* Dark Theme (Default) */
-            --bg-body: #0d1117;
-            --bg-card: #161b22;
-            --border-card: #30363d;
-            --text-primary: #c9d1d9;
-            --text-secondary: #8b949e;
-            --text-accent: #58a6ff; /* Blue */
-            --bg-countdown: #0e4429;
-            --text-countdown: #3fb950; /* Green */
-            --bg-calendar-day: #161b22;
+            --bg-body: #F0F4F0;      /* Pale Sage/Grey Base */
+            --bg-card: #FFFFFF;      /* Clean White Card */
+            --border-card: #D3DED3;  /* Muted light green-grey Border */
+            --text-primary: #3A473A; /* Deep Forest Green/Dark Grey Text */
+            --text-secondary: #7F8C7F; /* Soft Muted Grey Secondary Text */
+            --text-accent: #6B8E23;  /* Muted Olive Green Accent (Buttons, Active) */
+            --bg-countdown: #E8F0E8; /* Lighter background for countdown segments */
+            --text-countdown: #4A631F; /* Darker Olive for Numbers/Headers */
+            --bg-calendar-day: #FFFFFF;
+            --bg-alarm: #D9E4C5;     /* Very light accent background for tags */
+            --text-alarm: #6B8E23;   /* Muted Olive Green for alarm tag text */
         }
-
-        .theme-light {
-            /* Light Theme */
-            --bg-body: #f0f2f5;
-            --bg-card: #ffffff;
-            --border-card: #e1e4e8;
-            --text-primary: #24292f;
-            --text-secondary: #57606a;
-            --text-accent: #0366d6; /* Blue */
-            --bg-countdown: #e6f7e8;
-            --text-countdown: #28a745; /* Green */
-            --bg-calendar-day: #f7f7f7;
+        
+        /* Dark Mode Override: Deep Charcoal/Olive Theme (Low Contrast) */
+        body.dark {
+            --bg-body: #1E1E1E;      /* Very Dark Charcoal Base */
+            --bg-card: #2A2A2A;      /* Dark Gray Card */
+            --border-card: #404040;  /* Subtle dark border */
+            --text-primary: #E0E0E0; /* Soft White/Light Gray Text */
+            --text-secondary: #B0B0B0; /* Muted Secondary Text */
+            --text-accent: #AECF63;  /* Brighter Muted Olive Accent (for visibility) */
+            --bg-countdown: #3A3A3A; /* Darker background for segments */
+            --text-countdown: #D9EDAE; /* Pale Olive for Numbers/Headers */
+            --bg-calendar-day: #2A2A2A;
+            --bg-alarm: #4A5835;     /* Muted dark olive for alarm tag background */
+            --text-alarm: #E0E0E0;   /* Soft White for alarm tag text */
         }
 
         body { 
-            font-family: 'Inter', sans-serif;
+            font-family: 'Caveat', cursive;
             background-color: var(--bg-body);
             color: var(--text-primary);
-            transition: background-color 0.3s, color 0.3s;
+            transition: background-color 0.5s, color 0.5s;
         }
+        
+        /* Adjusting sizes for better readability with the script font */
+        .text-7xl { font-size: 5rem; } 
+        .text-8xl { font-size: 6rem; }
+        .font-extrabold { font-weight: 700; } 
+
         .card { 
             background-color: var(--bg-card); 
             border: 1px solid var(--border-card); 
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
-            transition: background-color 0.3s, border-color 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+            transition: background-color 0.5s, border-color 0.5s, box-shadow 0.5s;
         }
+        
+        /* Primary button uses the countdown color scheme (like a confirmation stamp) */
         .btn-primary { 
-            background-color: #238636; 
-            color: white; 
-            transition: background-color 0.2s, transform 0.1s;
+            background-color: var(--text-countdown); 
+            color: var(--bg-card); 
+            transition: background-color 0.2s, transform 0.1s, color 0.2s;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
         }
         .btn-primary:hover { 
-            background-color: #2ea043; 
+            background-color: var(--text-accent); 
             transform: translateY(-1px);
         }
+        
+        /* Alarm button uses the accent color scheme (matches tracker) */
+        .btn-alarm {
+            background-color: var(--text-accent);
+            color: var(--bg-card);
+            border: 1px solid var(--text-countdown); 
+        }
+        .btn-alarm:hover {
+             background-color: var(--text-countdown);
+             color: var(--bg-card);
+        }
+        
         .countdown-segment { 
             background-color: var(--bg-countdown); 
             color: var(--text-countdown); 
+            transition: background-color 0.5s, color 0.5s;
         }
         .input-field { 
             background-color: var(--bg-body); 
             border-color: var(--border-card); 
             color: var(--text-primary); 
-            transition: background-color 0.3s, border-color 0.3s;
+            transition: background-color 0.5s, border-color 0.5s, color 0.5s;
         }
         .date-input { appearance: none; }
         
@@ -73,6 +102,7 @@
         #menu-bar {
             background-color: var(--bg-card);
             border-bottom: 1px solid var(--border-card);
+            transition: background-color 0.5s, border-color 0.5s;
         }
         .menu-btn {
             color: var(--text-secondary);
@@ -83,87 +113,54 @@
             border-bottom: 3px solid var(--text-accent);
         }
 
-        /* --- Tear-Away Calendar Widget Styling --- */
-        #calendar-widget {
-            position: relative;
-            border: 1px solid var(--border-card);
-            border-radius: 0.5rem;
-            overflow: hidden;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
-            font-variant-numeric: tabular-nums;
-        }
-        #calendar-top {
-            background-color: var(--text-accent); 
-            color: var(--bg-card); 
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            font-weight: 600;
-        }
-        #calendar-day {
-            line-height: 1;
-            border-bottom: 2px dashed var(--border-card);
-            background-color: var(--bg-body); 
-            color: var(--text-accent);
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-        }
-        #calendar-day::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
-            pointer-events: none;
-        }
-        #calendar-bottom {
-            background-color: var(--bg-card);
-            color: var(--text-primary);
-        }
-
-        /* --- Full Calendar Grid Styling --- */
+        /* --- Calendar Grid Styling (Base styles only) --- */
         .calendar-day-cell {
-            aspect-ratio: 1 / 1; /* Makes cells square */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            cursor: default;
             background-color: var(--bg-calendar-day);
-            border-radius: 0.375rem;
-            transition: background-color 0.1s;
+            transition: background-color 0.5s;
         }
-        .calendar-day-cell:hover:not(.empty-day):not(.event-day) {
-            background-color: var(--bg-body);
-        }
+        /* Event day gets a thicker border and different background */
         .event-day {
             background-color: var(--bg-countdown) !important; 
-            color: var(--text-countdown) !important;
-            font-weight: bold;
-            border: 2px solid var(--text-countdown);
+            color: var(--text-primary) !important; 
+            border: 2px solid var(--text-accent);
         }
+        /* Today day gets an outline */
         .today-day {
             outline: 3px solid var(--text-accent);
-            outline-offset: -2px;
-            color: var(--text-accent);
-        }
-        .empty-day {
-            background-color: transparent !important;
+            outline-offset: -2px; /* Ensure outline is inside/tight to border */
         }
         
+        /* --- Alarm Specific Styles --- */
+        .alarm-item {
+            background-color: var(--bg-body);
+            border-left: 4px solid var(--text-accent); 
+            transition: background-color 0.5s, border-color 0.5s;
+        }
+        .alarm-triggered {
+            animation: alarmPulse 0.5s infinite alternate;
+            background-color: var(--text-accent) !important;
+            color: var(--bg-card) !important; 
+        }
+
+        /* Keyframes for the flashing status message */
+        @keyframes alarmPulse {
+            from { box-shadow: 0 0 10px var(--text-accent); opacity: 1; }
+            to { box-shadow: 0 0 20px var(--text-accent); opacity: 0.8; }
+        }
+
         /* CSS for LLM Loader */
         .loader {
             border-top-color: var(--text-accent);
             -webkit-animation: spinner 1.5s linear infinite;
             animation: spinner 1.5s linear infinite;
         }
-        @-webkit-keyframes spinner {
-            0% { -webkit-transform: rotate(0deg); }
-            100% { -webkit-transform: rotate(360deg); }
+        
+        /* Theme toggle button styling for visibility */
+        #theme-toggle {
+            color: var(--text-secondary);
         }
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        #theme-toggle:hover {
+            color: var(--text-accent);
         }
     </style>
 </head>
@@ -171,110 +168,111 @@
 
     <!-- Top Menu Bar -->
     <nav id="menu-bar" class="sticky top-0 z-10 w-full shadow-lg">
-        <div class="max-w-6xl mx-auto flex justify-between items-center p-3 sm:p-4">
-            <h1 class="text-xl font-extrabold text-[var(--text-accent)]">Time Flux ⏱️</h1>
+        <div class="max-w-7xl mx-auto flex justify-between items-center p-3 sm:p-4">
             
-            <!-- Navigation Buttons -->
-            <div class="flex space-x-2 sm:space-x-8">
-                <button id="nav-tracker" class="menu-btn p-2 sm:px-4 sm:py-2 text-sm sm:text-base font-semibold" onclick="switchView('tracker-view')">
-                    Event Tracker
-                </button>
-                <button id="nav-calendar" class="menu-btn p-2 sm:px-4 sm:py-2 text-sm sm:text-base font-semibold" onclick="switchView('calendar-view')">
-                    Calendar View
-                </button>
-                <button id="nav-difference" class="menu-btn p-2 sm:px-4 sm:py-2 text-sm sm:text-base font-semibold" onclick="switchView('difference-view')">
-                    Date Calculator
-                </button>
+            <!-- Logo and App Title -->
+            <div class="flex items-center space-x-2">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-[var(--text-secondary)]">Time Flux</h1>
             </div>
 
-            <!-- Theme Toggle -->
-            <button id="theme-toggle" onclick="switchTheme()" class="text-[var(--text-accent)] p-2 rounded-full hover:bg-[var(--bg-body)] transition">
-                <!-- Icon replaced by JS -->
-            </button>
+            <!-- Navigation Buttons -->
+            <div class="flex space-x-2 sm:space-x-4">
+                <button id="nav-tracker" class="menu-btn p-2 sm:px-4 sm:py-2 text-base sm:text-xl font-semibold" onclick="switchView('tracker-view')">
+                    Event Tracker
+                </button>
+                <button id="nav-calendar" class="menu-btn p-2 sm:px-4 sm:py-2 text-base sm:text-xl font-semibold" onclick="switchView('calendar-view')">
+                    Calendar View
+                </button>
+                <button id="nav-alarm" class="menu-btn p-2 sm:px-4 sm:py-2 text-base sm:text-xl font-semibold" onclick="switchView('alarm-view')">
+                    Alarms
+                </button>
+                <button id="nav-difference" class="menu-btn p-2 sm:px-4 sm:py-2 text-base sm:text-xl font-semibold" onclick="switchView('difference-view')">
+                    Date Calculator
+                </button>
+                
+                <!-- NEW Theme Toggle Button -->
+                <button id="theme-toggle" class="p-2 sm:px-3 rounded-full transition-colors" onclick="toggleTheme()">
+                    <i data-lucide="moon" class="w-6 h-6"></i>
+                </button>
+            </div>
         </div>
     </nav>
 
     <!-- Main Content Area -->
-    <main class="p-4 md:p-8 max-w-6xl mx-auto">
+    <main class="p-4 md:p-8 max-w-7xl mx-auto">
         
-        <!-- Header with Tear-Away Calendar Widget -->
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-extrabold text-[var(--text-accent)] mb-4 hidden sm:block">Time Flux: Your Temporal Dashboard</h1>
-            <div id="calendar-widget" class="mx-auto w-36 sm:w-40">
-                <div id="calendar-top" class="text-center pt-2 pb-1 text-xs font-semibold uppercase"></div>
-                <div id="calendar-day" class="text-center font-extrabold text-7xl sm:text-8xl"></div>
-                <div id="calendar-bottom" class="text-center pt-1 pb-2 text-sm font-medium"></div>
-            </div>
+            <h2 class="text-4xl sm:text-5xl font-extrabold text-[var(--text-primary)] mb-4">Welcome to Your Temporal Dashboard</h2>
         </header>
 
-        <!-- EVENT TRACKER VIEW (Countdown + Add + Saved Events) -->
-        <div id="tracker-view" class="grid grid-cols-1 lg:grid-cols-3 gap-6 hidden">
-            
-            <!-- Left Column: Countdown & Add -->
+        <!-- EVENT TRACKER VIEW (REMOVED: 'hidden' class) -->
+        <div id="tracker-view" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 space-y-6">
                 <div class="card p-6 rounded-xl">
-                    <h2 class="text-2xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-countdown)]">Current Countdown</h2>
+                    <!-- Heading Size Increased -->
+                    <h2 class="text-4xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-countdown)]">Current Countdown</h2>
                     <div id="countdown-display" class="text-center mb-6">
-                        <p class="text-[var(--text-secondary)] text-lg mb-2" id="event-name-display">Select an event to start countdown...</p>
+                        <p class="text-[var(--text-secondary)] text-xl mb-2" id="event-name-display">Select an event to start countdown...</p>
                         <div class="flex justify-center space-x-2 sm:space-x-4">
                             <div class="countdown-segment p-2 sm:p-4 rounded-lg">
-                                <span id="days" class="text-3xl sm:text-5xl font-extrabold block">00</span>
-                                <span class="text-xs sm:text-sm font-semibold block mt-1">Days</span>
+                                <span id="days" class="text-4xl sm:text-6xl font-extrabold block">00</span>
+                                <span class="text-base sm:text-lg font-semibold block mt-1">Days</span>
                             </div>
                             <div class="countdown-segment p-2 sm:p-4 rounded-lg">
-                                <span id="hours" class="text-3xl sm:text-5xl font-extrabold block">00</span>
-                                <span class="text-xs sm:text-sm font-semibold block mt-1">Hours</span>
+                                <span id="hours" class="text-4xl sm:text-6xl font-extrabold block">00</span>
+                                <span class="text-base sm:text-lg font-semibold block mt-1">Hours</span>
                             </div>
                             <div class="countdown-segment p-2 sm:p-4 rounded-lg">
-                                <span id="minutes" class="text-3xl sm:text-5xl font-extrabold block">00</span>
-                                <span class="text-xs sm:text-sm font-semibold block mt-1">Minutes</span>
+                                <span id="minutes" class="text-4xl sm:text-6xl font-extrabold block">00</span>
+                                <span class="text-base sm:text-lg font-semibold block mt-1">Minutes</span>
                             </div>
                             <div class="countdown-segment p-2 sm:p-4 rounded-lg">
-                                <span id="seconds" class="text-3xl sm:text-5xl font-extrabold block">00</span>
-                                <span class="text-xs sm:text-sm font-semibold block mt-1">Seconds</span>
+                                <span id="seconds" class="text-4xl sm:text-6xl font-extrabold block">00</span>
+                                <span class="text-base sm:text-lg font-semibold block mt-1">Seconds</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="card p-6 rounded-xl">
-                    <h3 class="text-2xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-accent)]">Add New Event</h3>
+                    <!-- Heading Size Increased -->
+                    <h3 class="text-4xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-accent)]">Add New Event</h3>
                     <form id="event-form" class="space-y-3">
                         <input type="text" id="event-name" placeholder="Event Name (e.g., Project Deadline)" required
-                               class="input-field w-full p-3 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
+                               class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 text-xl">
                         <input type="date" id="target-date" required
-                               class="input-field w-full p-3 rounded-lg border focus:ring-blue-500 focus:border-blue-500 date-input">
-                        <button type="submit" class="btn-primary w-full p-3 rounded-lg font-bold">Save & Start Tracking</button>
+                               class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input text-xl">
+                        <button type="submit" class="btn-primary w-full p-3 rounded-lg text-xl font-bold">Save & Start Tracking</button>
                     </form>
                 </div>
             </div>
 
-            <!-- Right Column: Saved Events List -->
             <div class="lg:col-span-1">
                 <div class="card p-6 rounded-xl h-full">
-                    <h2 class="text-2xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-countdown)]">Saved Events List</h2>
-                    <div id="events-list" class="space-y-3">
+                    <!-- Heading Size Increased -->
+                    <h2 class="text-4xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-countdown)]">Saved Events List</h2>
+                    <div id="events-list" class="space-y-3 text-lg">
                         <p class="text-[var(--text-secondary)]">Loading events...</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- FULL CALENDAR VIEW (NEW) -->
+        <!-- FULL CALENDAR VIEW -->
         <div id="calendar-view" class="hidden">
             <div class="card p-6 rounded-xl max-w-2xl mx-auto">
                 <div class="flex justify-between items-center mb-6">
                     <button onclick="changeMonth(-1)" class="p-2 rounded-full text-[var(--text-accent)] hover:bg-[var(--bg-body)] transition">
-                        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                        <i data-lucide="chevron-left" class="w-8 h-8"></i>
                     </button>
-                    <h2 id="calendar-title" class="text-2xl font-bold text-[var(--text-accent)]">Month Year</h2>
+                    <h2 id="calendar-title" class="text-4xl font-bold text-[var(--text-accent)]">Month Year</h2>
                     <button onclick="changeMonth(1)" class="p-2 rounded-full text-[var(--text-accent)] hover:bg-[var(--bg-body)] transition">
-                        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                        <i data-lucide="chevron-right" class="w-8 h-8"></i>
                     </button>
                 </div>
 
                 <!-- Weekday Headers -->
-                <div id="calendar-weekdays" class="grid grid-cols-7 text-center font-semibold text-sm mb-2 text-[var(--text-secondary)]">
+                <div id="calendar-weekdays" class="grid grid-cols-7 text-center font-semibold text-xl mb-2 text-[var(--text-secondary)]">
                     <div class="py-1">Sun</div>
                     <div class="py-1">Mon</div>
                     <div class="py-1">Tue</div>
@@ -290,10 +288,58 @@
                 </div>
                 
                 <div id="calendar-event-details" class="mt-8 pt-4 border-t border-[var(--border-card)]">
-                    <h3 class="text-xl font-bold mb-3 text-[var(--text-countdown)]">Events This Month</h3>
-                    <ul id="current-month-events" class="space-y-2 text-sm">
+                    <!-- Heading Size Increased -->
+                    <h3 class="text-4xl font-bold mb-3 text-[var(--text-countdown)]">Events This Month</h3>
+                    <ul id="current-month-events" class="space-y-2 text-xl">
                         <li class="text-[var(--text-secondary)]">Select a date to see events.</li>
                     </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ALARM & REMINDER VIEW -->
+        <div id="alarm-view" class="hidden">
+            <div class="card p-6 rounded-xl max-w-2xl mx-auto space-y-6">
+                <!-- Heading Size Increased -->
+                <h2 class="text-4xl font-bold border-b border-[var(--border-card)] pb-2 text-[var(--text-accent)]">Set New Alarm</h2>
+                
+                <form id="alarm-form" class="space-y-4">
+                    <input type="text" id="alarm-name" placeholder="Alarm Name (e.g., Take Medicine)" required
+                           class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 text-xl">
+                    
+                    <div class="flex space-x-4">
+                        <div class="flex-1">
+                            <label for="alarm-date" class="block mb-1 text-xl font-medium text-[var(--text-primary)]">Date</label>
+                            <input type="date" id="alarm-date" required
+                                   class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input text-xl">
+                        </div>
+                        <div class="flex-1">
+                            <label for="alarm-time" class="block mb-1 text-xl font-medium text-[var(--text-primary)]">Time (24h)</label>
+                            <input type="time" id="alarm-time" required
+                                   class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 text-xl">
+                        </div>
+                    </div>
+                    
+                    <!-- Recurrence Dropdown -->
+                    <div class="flex-1">
+                        <label for="alarm-recurrence" class="block mb-1 text-xl font-medium text-[var(--text-primary)]">Repeats</label>
+                        <select id="alarm-recurrence" 
+                                class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 text-xl">
+                            <option value="none">None</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-alarm w-full p-3 rounded-lg text-xl font-bold">Set Alarm</button>
+                </form>
+
+                <div class="pt-4 border-t border-[var(--border-card)]">
+                    <!-- Heading Size Increased -->
+                    <h3 class="text-4xl font-bold mb-3 text-[var(--text-accent)]">Active Alarms</h3>
+                    <div id="alarms-list" class="space-y-3 text-lg">
+                        <p class="text-[var(--text-secondary)]">No active alarms found. Set one above!</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -301,81 +347,111 @@
         <!-- DATE DIFFERENCE VIEW -->
         <div id="difference-view" class="hidden">
             <div class="card p-6 rounded-xl h-full flex flex-col max-w-lg mx-auto">
-                <h2 class="text-2xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-yellow-400">Date Difference Calculator</h2>
+                <!-- Heading Size Increased -->
+                <h2 class="text-4xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-accent)]">Date Difference Calculator</h2>
                 
                 <form id="difference-form" class="space-y-4 flex-grow">
                     <div>
-                        <label for="date-a" class="block mb-1 text-sm font-medium text-[var(--text-primary)]">Start Date (A)</label>
+                        <label for="date-a" class="block mb-1 text-xl font-medium text-[var(--text-primary)]">Start Date (A)</label>
                         <input type="date" id="date-a" required 
-                               class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input">
+                               class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input text-xl">
                     </div>
                     <div>
-                        <label for="date-b" class="block mb-1 text-sm font-medium text-[var(--text-primary)]">End Date (B)</label>
+                        <label for="date-b" class="block mb-1 text-xl font-medium text-[var(--text-primary)]">End Date (B)</label>
                         <input type="date" id="date-b" required
-                               class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input">
+                               class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input text-xl">
                     </div>
                     
-                    <button type="submit" class="w-full p-3 rounded-lg font-bold bg-yellow-600 text-white hover:bg-yellow-700 transition">Calculate Difference</button>
+                    <button type="submit" class="w-full p-3 rounded-lg text-xl font-bold bg-[var(--text-accent)] text-[var(--bg-card)] hover:bg-[var(--text-countdown)] transition">Calculate Difference</button>
                 </form>
 
                 <div class="mt-6 pt-4 border-t border-[var(--border-card)] text-center">
-                    <p class="text-lg font-semibold text-[var(--text-secondary)]">Result:</p>
-                    <p id="difference-result" class="text-3xl font-extrabold text-[var(--text-primary)] mt-1">0 Days</p>
+                    <p class="text-xl font-semibold text-[var(--text-secondary)]">Result:</p>
+                    <p id="difference-result" class="text-4xl font-extrabold text-[var(--text-primary)] mt-1">0 Days</p>
                 </div>
             </div>
         </div>
 
     </main>
     
-    <div id="status-message" class="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-lg shadow-xl hidden"></div>
+    <!-- Status Message -->
+    <div id="status-message" class="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-lg shadow-xl hidden text-lg"></div>
 
-    <!-- Modal for Gemini Output (Unchanged) -->
+    <!-- Modal for Gemini Output -->
     <div id="llm-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-[var(--bg-card)] p-6 rounded-xl w-full max-w-xl border border-[var(--border-card)]">
-            <h3 id="modal-title" class="text-xl font-bold mb-4 text-[var(--text-accent)]">Generating Details...</h3>
+            <h3 id="modal-title" class="text-2xl font-bold mb-4 text-[var(--text-accent)]">Generating Details...</h3>
             <div id="modal-content-area" class="min-h-[100px] text-[var(--text-primary)]">
                 <div id="llm-loading" class="text-center">
                     <div class="loader ease-linear rounded-full border-4 border-t-4 border-[var(--border-card)] h-12 w-12 mb-4 mx-auto"></div>
-                    <p>Contacting the Time Flux AI Planner...</p>
+                    <p class="text-xl">Contacting the Time Flux AI Planner...</p>
                 </div>
-                <div id="llm-result" class="text-sm space-y-3 hidden"></div>
+                <div id="llm-result" class="text-xl space-y-3 hidden"></div>
             </div>
-            <button onclick="hideLLMModal()" class="w-full mt-6 p-3 rounded-lg font-bold bg-red-600 text-white hover:bg-red-700 transition">Close</button>
+            <button onclick="hideLLMModal()" class="w-full mt-6 p-3 rounded-lg font-bold bg-[var(--text-accent)] text-[var(--bg-card)] hover:bg-[var(--text-countdown)] transition text-xl">Close</button>
         </div>
     </div>
 
     <script>
         // --- Global Configuration & State ---
         const STORAGE_KEY = 'timeFluxEvents';
+        const ALARM_KEY = 'timeFluxAlarms';
         const THEME_KEY = 'timeFluxTheme';
         const apiKey = ""; 
 
         let countdownInterval;
+        let alarmCheckInterval; 
         let trackedEvent = null;
-        let currentCalendarDate = new Date(); // New state for calendar month/year
+        let currentCalendarDate = new Date();
+
+        // Tone.js Synth setup for chime sound
+        let synth;
+        try {
+            if (window.Tone && Tone.context.state !== 'running') {
+                Tone.start();
+            }
+            synth = new Tone.Synth({
+                oscillator: { type: "sine" },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.1,
+                    sustain: 0.05,
+                    release: 0.2
+                }
+            }).toDestination();
+        } catch (e) {
+            console.warn("Tone.js failed to initialize:", e);
+            synth = null;
+        }
+
 
         // --- DOM Elements ---
-        const themeToggle = document.getElementById('theme-toggle');
         const views = {
             'tracker-view': document.getElementById('tracker-view'),
-            'calendar-view': document.getElementById('calendar-view'), // New View
+            'calendar-view': document.getElementById('calendar-view'),
+            'alarm-view': document.getElementById('alarm-view'),
             'difference-view': document.getElementById('difference-view'),
         };
         const navButtons = {
             'tracker-view': document.getElementById('nav-tracker'),
-            'calendar-view': document.getElementById('nav-calendar'), // New Button
+            'calendar-view': document.getElementById('nav-calendar'),
+            'alarm-view': document.getElementById('nav-alarm'), 
             'difference-view': document.getElementById('nav-difference'),
         };
-        // Calendar elements (Tear-Away)
-        const calendarTop = document.getElementById('calendar-top');
-        const calendarDay = document.getElementById('calendar-day');
-        const calendarBottom = document.getElementById('calendar-bottom');
+        
+        // Theme elements
+        const themeToggle = document.getElementById('theme-toggle'); // Reference to the button
+
         // Calendar elements (Full View)
         const calendarTitle = document.getElementById('calendar-title');
         const calendarGrid = document.getElementById('calendar-grid');
         const currentMonthEventsList = document.getElementById('current-month-events');
         
-        // ... (other element references remain the same)
+        // Alarm elements
+        const alarmForm = document.getElementById('alarm-form');
+        const alarmsList = document.getElementById('alarms-list');
+
+        // Countdown & Form elements
         const eventsList = document.getElementById('events-list');
         const eventForm = document.getElementById('event-form');
         const differenceForm = document.getElementById('difference-form');
@@ -391,29 +467,38 @@
         const llmLoading = document.getElementById('llm-loading');
         const llmResult = document.getElementById('llm-result');
 
-        // --- Theme Switching Logic (Unchanged) ---
-        window.switchTheme = function() {
-            const isLight = document.body.classList.toggle('theme-light');
-            const newTheme = isLight ? 'light' : 'dark';
-            localStorage.setItem(THEME_KEY, newTheme);
-            updateThemeIcon(newTheme);
-        }
+        // --- Theme Toggling Logic (FIXED) ---
+        function applyTheme(theme) {
+            // Find the active SVG icon inside the button
+            const currentSvg = themeToggle ? themeToggle.querySelector('svg') : null;
 
-        function loadTheme() {
-            const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
-            if (savedTheme === 'light') {
-                document.body.classList.add('theme-light');
+            if (theme === 'dark') {
+                document.body.classList.add('dark');
+                // Use lucide.replace on the existing SVG
+                if (currentSvg) lucide.replace(currentSvg, { name: 'sun' });
+            } else {
+                document.body.classList.remove('dark');
+                // Use lucide.replace on the existing SVG
+                if (currentSvg) lucide.replace(currentSvg, { name: 'moon' });
             }
-            updateThemeIcon(savedTheme);
         }
 
-        function updateThemeIcon(theme) {
-            const iconName = theme === 'dark' ? 'sun' : 'moon';
-            themeToggle.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
-            lucide.createIcons();
+        window.toggleTheme = function() {
+            const isDark = document.body.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            localStorage.setItem(THEME_KEY, newTheme);
+            applyTheme(newTheme);
         }
 
-        // --- View Switching Logic (Updated for 3 views) ---
+        function loadThemePreference() {
+            // CRITICAL FIX: Ensure icons are created (i.e., the <i> is replaced with <svg>) before we try to manipulate them.
+            lucide.createIcons(); 
+            
+            const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+            applyTheme(savedTheme);
+        }
+
+        // --- View Switching Logic ---
         window.switchView = function(viewId) {
             // 1. Hide all views and deactivate all buttons
             Object.keys(views).forEach(id => {
@@ -432,29 +517,14 @@
                 loadEvents();
             } else if (viewId === 'calendar-view') {
                 renderCalendar(currentCalendarDate);
+            } else if (viewId === 'alarm-view') {
+                loadAlarms();
             }
         }
         
-        // --- Tear-Away Calendar Logic (Unchanged) ---
-        function updateCurrentDateTime() {
-            const now = new Date();
-            const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
-            const monthName = now.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-            const dayOfMonth = now.getDate();
-            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-            calendarTop.textContent = `${dayName} | ${time}`;
-            calendarDay.textContent = dayOfMonth.toString();
-            calendarBottom.textContent = monthName + " " + now.getFullYear();
-        }
-
-        // --- Full Calendar View Logic (NEW) ---
-        
-        /**
-         * Renders the calendar grid for the month/year of the given date object.
-         */
+        // --- Full Calendar View Logic (UPDATED for Rounded Squares) ---
         function renderCalendar(date) {
-            currentCalendarDate = date; // Update global state
+            currentCalendarDate = date;
             calendarGrid.innerHTML = '';
             
             const month = date.getMonth();
@@ -464,14 +534,11 @@
             const todayMonth = today.getMonth();
             const todayYear = today.getFullYear();
 
-            // Set the title
             calendarTitle.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-            // 1. Determine first day of the month and number of days
-            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0=Sunday, 6=Saturday
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            // 2. Load and format all saved events for easy lookup
             const savedEvents = getEventsFromLocalStorage().map(e => ({
                 name: e.name,
                 date: new Date(e.targetDate)
@@ -479,37 +546,48 @@
                 e.date.getMonth() === month && e.date.getFullYear() === year
             );
             
-            // Helper to get events for a specific day
             const getEventsForDay = (dayNum) => {
                 return savedEvents.filter(e => e.date.getDate() === dayNum);
             };
 
-            // 3. Render empty cells (padding for the first week)
+            // Base classes for the square, rounded appearance of all day cells
+            const baseClasses = [
+                'calendar-day-cell', 
+                'text-xl', 
+                'sm:text-2xl', 
+                'font-semibold',
+                'p-2', 
+                'rounded-xl',       // <--- Added: Rounded corners 
+                'aspect-square',    // <--- Added: Enforce square shape
+                'flex', 
+                'items-center', 
+                'justify-center'
+            ];
+
+            // 1. Render preceding empty cells
             for (let i = 0; i < firstDayOfMonth; i++) {
                 const emptyCell = document.createElement('div');
-                emptyCell.className = 'calendar-day-cell empty-day';
+                emptyCell.className = [...baseClasses, 'empty-day', 'opacity-50', 'bg-transparent'].join(' '); 
+                emptyCell.textContent = ''; 
                 calendarGrid.appendChild(emptyCell);
             }
 
-            // 4. Render day cells
+            // 2. Render actual days
             for (let day = 1; day <= daysInMonth; day++) {
                 const cell = document.createElement('div');
                 cell.textContent = day;
                 
-                let classes = ['calendar-day-cell', 'text-sm', 'sm:text-lg', 'font-semibold'];
+                let classes = [...baseClasses];
                 
                 const eventsOnThisDay = getEventsForDay(day);
                 
-                // Check if today
                 if (day === todayDay && month === todayMonth && year === todayYear) {
                     classes.push('today-day');
                 }
                 
-                // Check if there are events
                 if (eventsOnThisDay.length > 0) {
                     classes.push('event-day', 'cursor-pointer');
                     
-                    // Attach event data for detail view
                     const eventTitles = eventsOnThisDay.map(e => e.name).join(', ');
                     cell.setAttribute('title', `Events: ${eventTitles}`);
                     cell.addEventListener('click', () => displayDayEvents(eventsOnThisDay, day));
@@ -519,22 +597,15 @@
                 calendarGrid.appendChild(cell);
             }
             
-            // 5. Display list of all events for the current month
             displayMonthEvents(savedEvents);
         }
 
-        /**
-         * Changes the displayed month and re-renders the calendar.
-         */
         window.changeMonth = function(delta) {
             const newDate = new Date(currentCalendarDate.getTime());
             newDate.setMonth(newDate.getMonth() + delta);
             renderCalendar(newDate);
         }
         
-        /**
-         * Displays the list of all events in the current view month.
-         */
         function displayMonthEvents(events) {
             currentMonthEventsList.innerHTML = '';
             
@@ -553,9 +624,6 @@
             });
         }
         
-        /**
-         * Displays a temporary message about events on a clicked day.
-         */
         function displayDayEvents(events, day) {
             if (events.length === 0) return;
             
@@ -563,8 +631,163 @@
             showStatus(`Day ${day} events: ${titles}`, false);
         }
 
+        // --- Alarm Logic (Unchanged) ---
 
-        // --- (All other data/API/form logic remains the same) ---
+        function getAlarmsFromLocalStorage() {
+            const stored = localStorage.getItem(ALARM_KEY);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        function saveAlarmsToLocalStorage(alarms) {
+            localStorage.setItem(ALARM_KEY, JSON.stringify(alarms));
+        }
+
+        function triggerAlarmSound() {
+            if (synth) {
+                synth.triggerAttackRelease("C5", "8n", "+0");
+                synth.triggerAttackRelease("E5", "8n", "+0.2");
+                synth.triggerAttackRelease("G5", "4n", "+0.4");
+            }
+        }
+        
+        function checkAlarms() {
+            const now = Date.now();
+            let alarms = getAlarmsFromLocalStorage();
+            let triggered = false;
+
+            for (let i = 0; i < alarms.length; i++) {
+                const alarm = alarms[i];
+                let alarmTime = alarm.fullTime;
+                
+                // Check if the alarm time has passed but is within the last 60 seconds (60,000ms)
+                if (alarmTime <= now && alarmTime > now - 60000) {
+                    console.log("Alarm Triggered:", alarm.name);
+                    
+                    showStatus(`🔔 ALARM: ${alarm.name} is due!`, false, 'alarm');
+                    triggerAlarmSound();
+                    
+                    triggered = true;
+                    
+                    if (alarm.recurrence === 'none') {
+                        // Remove the alarm
+                        alarms.splice(i, 1);
+                        i--; 
+                    } else if (alarm.recurrence === 'daily') {
+                        // Set for 24 hours later
+                        alarm.fullTime = alarmTime + 24 * 60 * 60 * 1000;
+                        showStatus(`🔔 ALARM: ${alarm.name} rescheduled for tomorrow!`);
+                    } else if (alarm.recurrence === 'weekly') {
+                        // Set for 7 days later
+                        alarm.fullTime = alarmTime + 7 * 24 * 60 * 60 * 1000;
+                        showStatus(`🔔 ALARM: ${alarm.name} rescheduled for next week!`);
+                    }
+                }
+            }
+
+            if (triggered) {
+                saveAlarmsToLocalStorage(alarms);
+                loadAlarms(); 
+            }
+        }
+
+        function loadAlarms() {
+            alarmsList.innerHTML = '';
+            let alarms = getAlarmsFromLocalStorage();
+
+            if (alarms.length === 0) {
+                alarmsList.innerHTML = '<p class="text-[var(--text-secondary)]">No active alarms found. Set one above!</p>';
+                return;
+            }
+
+            // Sort by time remaining
+            alarms.sort((a, b) => a.fullTime - b.fullTime);
+
+            alarms.forEach((alarm) => {
+                const target = new Date(alarm.fullTime);
+                const dateStr = target.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                const timeStr = target.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center p-3 rounded-lg alarm-item';
+                
+                const recurrenceText = alarm.recurrence === 'none' ? 'Once' : (alarm.recurrence.charAt(0).toUpperCase() + alarm.recurrence.slice(1));
+
+                item.innerHTML = `
+                    <div>
+                        <p class="font-semibold text-[var(--text-primary)]">${alarm.name}</p>
+                        <p class="text-base text-[var(--text-secondary)]">
+                            ${dateStr} at ${timeStr} 
+                            <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--bg-alarm)] text-[var(--text-alarm)]">${recurrenceText}</span>
+                        </p>
+                    </div>
+                    <div>
+                        <button data-id="${alarm.id}" data-action="delete-alarm" class="text-[var(--text-accent)] hover:text-[var(--text-secondary)] text-base font-medium">Delete</button>
+                    </div>
+                `;
+                alarmsList.appendChild(item);
+            });
+            
+            // --- Event Listeners for the Alarm List ---
+            document.querySelectorAll('[data-action="delete-alarm"]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const alarmId = e.target.dataset.id;
+                    try {
+                        let alarmsArray = getAlarmsFromLocalStorage();
+                        alarmsArray = alarmsArray.filter(alarm => alarm.id !== alarmId);
+                        saveAlarmsToLocalStorage(alarmsArray);
+                        showStatus("Alarm deleted.");
+                        loadAlarms(); 
+                    } catch (error) {
+                        console.error("Error deleting alarm:", error);
+                        showStatus("Failed to delete alarm.", true);
+                    }
+                });
+            });
+        }
+
+        alarmForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('alarm-name').value.trim();
+            const dateStr = document.getElementById('alarm-date').value;
+            const timeStr = document.getElementById('alarm-time').value;
+            const recurrence = document.getElementById('alarm-recurrence').value;
+            
+            if (!name || !dateStr || !timeStr) return;
+            
+            const dateTimeString = `${dateStr}T${timeStr}:00`;
+            const targetTime = new Date(dateTimeString);
+
+            if (targetTime.getTime() <= Date.now()) {
+                showStatus("Cannot set alarm in the past.", true);
+                return;
+            }
+            
+            const docId = 'alarm_' + Date.now();
+            
+            try {
+                const alarmData = {
+                    id: docId, 
+                    name: name,
+                    fullTime: targetTime.getTime(),
+                    recurrence: recurrence // Store recurrence
+                };
+                
+                const alarms = getAlarmsFromLocalStorage();
+                alarms.push(alarmData);
+                saveAlarmsToLocalStorage(alarms);
+
+                showStatus(`Alarm '${name}' set. Repeats: ${recurrence.charAt(0).toUpperCase() + recurrence.slice(1)}!`);
+                alarmForm.reset();
+                loadAlarms();
+            } catch (error) {
+                console.error("Error saving alarm:", error);
+                showStatus("Failed to save alarm.", true);
+            }
+        });
+
+
+        // --- General Utility Functions (Unchanged) ---
 
         function getEventsFromLocalStorage() {
             const stored = localStorage.getItem(STORAGE_KEY);
@@ -575,14 +798,27 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
         }
 
-        function showStatus(message, isError = false) {
+        function showStatus(message, isError = false, type = 'status') {
             statusMessageEl.textContent = message;
-            statusMessageEl.className = 'fixed bottom-4 right-4 p-3 rounded-lg shadow-xl';
-            statusMessageEl.classList.add(isError ? 'bg-red-600' : 'bg-blue-500', 'block');
+            statusMessageEl.className = 'fixed bottom-4 right-4 p-3 rounded-lg shadow-xl block text-lg';
+            
+            // Reset colors
+            statusMessageEl.style.backgroundColor = '';
+            statusMessageEl.style.color = 'white';
+            statusMessageEl.classList.remove('bg-red-600', 'bg-blue-500', 'alarm-triggered');
+
+            if (type === 'alarm') {
+                statusMessageEl.classList.add('alarm-triggered');
+                statusMessageEl.style.backgroundColor = 'var(--text-accent)'; 
+                statusMessageEl.style.color = 'var(--bg-card)';
+            } else {
+                statusMessageEl.classList.add(isError ? 'bg-red-600' : 'bg-blue-500');
+            }
+
             setTimeout(() => {
-                statusMessageEl.classList.remove('block');
+                statusMessageEl.classList.remove('block', 'alarm-triggered');
                 statusMessageEl.classList.add('hidden');
-            }, 3000);
+            }, 5000); 
         }
 
         function showLLMModal(title) {
@@ -596,6 +832,8 @@
         window.hideLLMModal = function() { 
             llmModal.classList.add('hidden');
         }
+
+        // --- Countdown & Event Logic (Unchanged) ---
 
         function updateCountdown() {
             if (!trackedEvent || !trackedEvent.targetDate) {
@@ -665,7 +903,7 @@
                 showStatus(`Event '${name}' saved successfully!`);
                 eventForm.reset();
                 startCountdown({...eventData, targetDate: targetDate}); 
-                renderCalendar(currentCalendarDate); // Re-render calendar to show new event
+                renderCalendar(currentCalendarDate);
             } catch (error) {
                 console.error("Error saving event:", error);
                 showStatus("Failed to save event.", true);
@@ -697,12 +935,12 @@
                 item.innerHTML = `
                     <div>
                         <p class="font-semibold text-[var(--text-primary)]">${event.name}</p>
-                        <p class="text-sm text-[var(--text-secondary)]">${dateStr}</p>
+                        <p class="text-base text-[var(--text-secondary)]">${dateStr}</p>
                     </div>
                     <div class="space-x-2 flex items-center">
-                        <button data-id="${event.id}" data-action="generate" class="text-purple-400 hover:text-purple-300 text-sm font-medium p-1 rounded-md bg-purple-900/50 hover:bg-purple-900 transition">✨ Details</button>
-                        <button data-id="${event.id}" data-action="track" class="text-[var(--text-accent)] hover:text-blue-300 text-sm font-medium">Track</button>
-                        <button data-id="${event.id}" data-action="delete" class="text-red-400 hover:text-red-300 text-sm font-medium">Delete</button>
+                        <button data-id="${event.id}" data-action="generate" class="text-purple-400 hover:text-purple-300 text-base font-medium p-1 rounded-md bg-purple-900/50 hover:bg-purple-800/50 transition">✨ Details</button>
+                        <button data-id="${event.id}" data-action="track" class="text-[var(--text-accent)] hover:text-[var(--text-countdown)] text-base font-medium">Track</button>
+                        <button data-id="${event.id}" data-action="delete" class="text-red-400 hover:text-red-300 text-base font-medium">Delete</button>
                     </div>
                 `;
                 eventsList.appendChild(item);
@@ -732,7 +970,7 @@
                             saveEventsToLocalStorage(eventsArray);
                             showStatus("Event deleted.");
                             loadEvents(); 
-                            renderCalendar(currentCalendarDate); // Re-render calendar after deletion
+                            renderCalendar(currentCalendarDate);
 
                             if (trackedEvent && trackedEvent.id === eventId) {
                                 trackedEvent = null;
@@ -758,7 +996,7 @@
             });
         }
         
-        // --- Gemini API Logic (omitted for brevity, remains unchanged) ---
+        // --- Gemini API Logic (Unchanged) ---
         async function exponentialBackoffFetch(url, options, maxRetries = 5) {
             for (let i = 0; i < maxRetries; i++) {
                 try {
@@ -820,8 +1058,8 @@
         
         function formatMarkdownToHtml(markdownText) {
             let html = markdownText;
-            html = html.replace(/^### (.*$)/gim, '<h4 class="text-lg font-semibold text-white mt-3 mb-1">$1</h4>');
-            html = html.replace(/^## (.*$)/gim, '<h4 class="text-xl font-bold text-[var(--text-countdown)] mt-4 mb-2 border-b border-[var(--border-card)] pb-1">$1</h4>');
+            html = html.replace(/^### (.*$)/gim, '<h4 class="text-xl font-semibold text-[var(--text-primary)] mt-3 mb-1">$1</h4>');
+            html = html.replace(/^## (.*$)/gim, '<h4 class="text-2xl font-bold text-[var(--text-countdown)] mt-4 mb-2 border-b border-[var(--border-card)] pb-1">$1</h4>');
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             html = html.replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc">$1</li>');
             html = html.replace(/<li/g, '<ul><li').replace(/<\/li>(\s*<h|\s*$)/g, '</li></ul>$1'); 
@@ -831,6 +1069,7 @@
             return html;
         }
         
+        // --- Date Difference Logic (Unchanged) ---
         function calculateDifference(dateA, dateB) {
             const d1 = new Date(dateA);
             const d2 = new Date(dateB);
@@ -856,11 +1095,11 @@
         });
 
         window.onload = () => {
-            loadTheme();
+            loadThemePreference();
             switchView('tracker-view'); 
-            updateCurrentDateTime(); 
-            setInterval(updateCurrentDateTime, 1000); 
-            updateCountdown(); 
+            setInterval(updateCountdown, 1000); 
+            // 5-second interval for checking alarms 
+            alarmCheckInterval = setInterval(checkAlarms, 5000); 
         };
 
     </script>
