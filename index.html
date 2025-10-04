@@ -6,22 +6,154 @@
     <title>Date & Countdown Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <script type="module">
-        // Firebase imports have been removed to use localStorage for data persistence.
-        // Keeping this block for potential future module imports if needed.
-    </script>
+    <script src="https://unpkg.com/lucide@latest"></script> 
+    
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0d1117; color: #c9d1d9; }
-        .card { background-color: #161b22; border: 1px solid #30363d; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); transition: transform 0.2s; }
-        .btn-primary { background-color: #238636; color: white; transition: background-color 0.2s, transform 0.1s; }
-        .btn-primary:hover { background-color: #2ea043; transform: translateY(-1px); }
-        .countdown-segment { background-color: #0e4429; color: #3fb950; }
-        .input-field { background-color: #0d1117; border-color: #30363d; color: #c9d1d9; }
+        /* --- CSS Variables for Theming --- */
+        :root {
+            /* Dark Theme (Default) */
+            --bg-body: #0d1117;
+            --bg-card: #161b22;
+            --border-card: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --text-accent: #58a6ff; /* Blue */
+            --bg-countdown: #0e4429;
+            --text-countdown: #3fb950; /* Green */
+            --bg-calendar-day: #161b22;
+        }
+
+        .theme-light {
+            /* Light Theme */
+            --bg-body: #f0f2f5;
+            --bg-card: #ffffff;
+            --border-card: #e1e4e8;
+            --text-primary: #24292f;
+            --text-secondary: #57606a;
+            --text-accent: #0366d6; /* Blue */
+            --bg-countdown: #e6f7e8;
+            --text-countdown: #28a745; /* Green */
+            --bg-calendar-day: #f7f7f7;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .card { 
+            background-color: var(--bg-card); 
+            border: 1px solid var(--border-card); 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .btn-primary { 
+            background-color: #238636; 
+            color: white; 
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover { 
+            background-color: #2ea043; 
+            transform: translateY(-1px);
+        }
+        .countdown-segment { 
+            background-color: var(--bg-countdown); 
+            color: var(--text-countdown); 
+        }
+        .input-field { 
+            background-color: var(--bg-body); 
+            border-color: var(--border-card); 
+            color: var(--text-primary); 
+            transition: background-color 0.3s, border-color 0.3s;
+        }
         .date-input { appearance: none; }
+        
+        /* --- Menu Bar Styling --- */
+        #menu-bar {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-card);
+        }
+        .menu-btn {
+            color: var(--text-secondary);
+            transition: color 0.2s, border-bottom 0.2s;
+        }
+        .menu-btn.active {
+            color: var(--text-accent);
+            border-bottom: 3px solid var(--text-accent);
+        }
+
+        /* --- Tear-Away Calendar Widget Styling --- */
+        #calendar-widget {
+            position: relative;
+            border: 1px solid var(--border-card);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            font-variant-numeric: tabular-nums;
+        }
+        #calendar-top {
+            background-color: var(--text-accent); 
+            color: var(--bg-card); 
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+        #calendar-day {
+            line-height: 1;
+            border-bottom: 2px dashed var(--border-card);
+            background-color: var(--bg-body); 
+            color: var(--text-accent);
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+        #calendar-day::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+            pointer-events: none;
+        }
+        #calendar-bottom {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        /* --- Full Calendar Grid Styling --- */
+        .calendar-day-cell {
+            aspect-ratio: 1 / 1; /* Makes cells square */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: default;
+            background-color: var(--bg-calendar-day);
+            border-radius: 0.375rem;
+            transition: background-color 0.1s;
+        }
+        .calendar-day-cell:hover:not(.empty-day):not(.event-day) {
+            background-color: var(--bg-body);
+        }
+        .event-day {
+            background-color: var(--bg-countdown) !important; 
+            color: var(--text-countdown) !important;
+            font-weight: bold;
+            border: 2px solid var(--text-countdown);
+        }
+        .today-day {
+            outline: 3px solid var(--text-accent);
+            outline-offset: -2px;
+            color: var(--text-accent);
+        }
+        .empty-day {
+            background-color: transparent !important;
+        }
         
         /* CSS for LLM Loader */
         .loader {
-            border-top-color: #3b82f6; /* Blue 500 */
+            border-top-color: var(--text-accent);
             -webkit-animation: spinner 1.5s linear infinite;
             animation: spinner 1.5s linear infinite;
         }
@@ -35,70 +167,150 @@
         }
     </style>
 </head>
-<body class="p-4 md:p-8 min-h-screen">
+<body class="p-0 min-h-screen">
 
-    <header class="text-center mb-8">
-        <h1 class="text-4xl font-extrabold text-[#58a6ff]">Time Flux ⏱️</h1>
-        <p id="current-date-display" class="text-xl font-medium text-gray-400 mt-2"></p>
-    </header>
+    <!-- Top Menu Bar -->
+    <nav id="menu-bar" class="sticky top-0 z-10 w-full shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center p-3 sm:p-4">
+            <h1 class="text-xl font-extrabold text-[var(--text-accent)]">Time Flux ⏱️</h1>
+            
+            <!-- Navigation Buttons -->
+            <div class="flex space-x-2 sm:space-x-8">
+                <button id="nav-tracker" class="menu-btn p-2 sm:px-4 sm:py-2 text-sm sm:text-base font-semibold" onclick="switchView('tracker-view')">
+                    Event Tracker
+                </button>
+                <button id="nav-calendar" class="menu-btn p-2 sm:px-4 sm:py-2 text-sm sm:text-base font-semibold" onclick="switchView('calendar-view')">
+                    Calendar View
+                </button>
+                <button id="nav-difference" class="menu-btn p-2 sm:px-4 sm:py-2 text-sm sm:text-base font-semibold" onclick="switchView('difference-view')">
+                    Date Calculator
+                </button>
+            </div>
 
-    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Theme Toggle -->
+            <button id="theme-toggle" onclick="switchTheme()" class="text-[var(--text-accent)] p-2 rounded-full hover:bg-[var(--bg-body)] transition">
+                <!-- Icon replaced by JS -->
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="p-4 md:p-8 max-w-6xl mx-auto">
         
-        <div class="lg:col-span-2 space-y-6">
-            <div class="card p-6 rounded-xl">
-                <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-400">Countdown Tracker</h2>
-                <div id="countdown-display" class="text-center mb-6">
-                    <p class="text-gray-400 text-lg mb-2" id="event-name-display">Select an event to start countdown...</p>
-                    <div class="flex justify-center space-x-2 sm:space-x-4">
-                        <div class="countdown-segment p-2 sm:p-4 rounded-lg">
-                            <span id="days" class="text-3xl sm:text-5xl font-extrabold block">00</span>
-                            <span class="text-xs sm:text-sm font-semibold block mt-1">Days</span>
-                        </div>
-                        <div class="countdown-segment p-2 sm:p-4 rounded-lg">
-                            <span id="hours" class="text-3xl sm:text-5xl font-extrabold block">00</span>
-                            <span class="text-xs sm:text-sm font-semibold block mt-1">Hours</span>
-                        </div>
-                        <div class="countdown-segment p-2 sm:p-4 rounded-lg">
-                            <span id="minutes" class="text-3xl sm:text-5xl font-extrabold block">00</span>
-                            <span class="text-xs sm:text-sm font-semibold block mt-1">Minutes</span>
-                        </div>
-                        <div class="countdown-segment p-2 sm:p-4 rounded-lg">
-                            <span id="seconds" class="text-3xl sm:text-5xl font-extrabold block">00</span>
-                            <span class="text-xs sm:text-sm font-semibold block mt-1">Seconds</span>
+        <!-- Header with Tear-Away Calendar Widget -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-[var(--text-accent)] mb-4 hidden sm:block">Time Flux: Your Temporal Dashboard</h1>
+            <div id="calendar-widget" class="mx-auto w-36 sm:w-40">
+                <div id="calendar-top" class="text-center pt-2 pb-1 text-xs font-semibold uppercase"></div>
+                <div id="calendar-day" class="text-center font-extrabold text-7xl sm:text-8xl"></div>
+                <div id="calendar-bottom" class="text-center pt-1 pb-2 text-sm font-medium"></div>
+            </div>
+        </header>
+
+        <!-- EVENT TRACKER VIEW (Countdown + Add + Saved Events) -->
+        <div id="tracker-view" class="grid grid-cols-1 lg:grid-cols-3 gap-6 hidden">
+            
+            <!-- Left Column: Countdown & Add -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="card p-6 rounded-xl">
+                    <h2 class="text-2xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-countdown)]">Current Countdown</h2>
+                    <div id="countdown-display" class="text-center mb-6">
+                        <p class="text-[var(--text-secondary)] text-lg mb-2" id="event-name-display">Select an event to start countdown...</p>
+                        <div class="flex justify-center space-x-2 sm:space-x-4">
+                            <div class="countdown-segment p-2 sm:p-4 rounded-lg">
+                                <span id="days" class="text-3xl sm:text-5xl font-extrabold block">00</span>
+                                <span class="text-xs sm:text-sm font-semibold block mt-1">Days</span>
+                            </div>
+                            <div class="countdown-segment p-2 sm:p-4 rounded-lg">
+                                <span id="hours" class="text-3xl sm:text-5xl font-extrabold block">00</span>
+                                <span class="text-xs sm:text-sm font-semibold block mt-1">Hours</span>
+                            </div>
+                            <div class="countdown-segment p-2 sm:p-4 rounded-lg">
+                                <span id="minutes" class="text-3xl sm:text-5xl font-extrabold block">00</span>
+                                <span class="text-xs sm:text-sm font-semibold block mt-1">Minutes</span>
+                            </div>
+                            <div class="countdown-segment p-2 sm:p-4 rounded-lg">
+                                <span id="seconds" class="text-3xl sm:text-5xl font-extrabold block">00</span>
+                                <span class="text-xs sm:text-sm font-semibold block mt-1">Seconds</span>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <h3 class="text-xl font-semibold mb-3">Add/Track New Event</h3>
-                <form id="event-form" class="space-y-3">
-                    <input type="text" id="event-name" placeholder="Event Name (e.g., Project Deadline)" required
-                           class="input-field w-full p-3 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
-                    <input type="date" id="target-date" required
-                           class="input-field w-full p-3 rounded-lg border focus:ring-blue-500 focus:border-blue-500 date-input">
-                    <button type="submit" class="btn-primary w-full p-3 rounded-lg font-bold">Save & Start Tracking</button>
-                </form>
+                <div class="card p-6 rounded-xl">
+                    <h3 class="text-2xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-accent)]">Add New Event</h3>
+                    <form id="event-form" class="space-y-3">
+                        <input type="text" id="event-name" placeholder="Event Name (e.g., Project Deadline)" required
+                               class="input-field w-full p-3 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
+                        <input type="date" id="target-date" required
+                               class="input-field w-full p-3 rounded-lg border focus:ring-blue-500 focus:border-blue-500 date-input">
+                        <button type="submit" class="btn-primary w-full p-3 rounded-lg font-bold">Save & Start Tracking</button>
+                    </form>
+                </div>
             </div>
 
-            <div class="card p-6 rounded-xl">
-                <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-400">Saved Events</h2>
-                <div id="events-list" class="space-y-3">
-                    <p class="text-gray-500">Loading events...</p>
+            <!-- Right Column: Saved Events List -->
+            <div class="lg:col-span-1">
+                <div class="card p-6 rounded-xl h-full">
+                    <h2 class="text-2xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-[var(--text-countdown)]">Saved Events List</h2>
+                    <div id="events-list" class="space-y-3">
+                        <p class="text-[var(--text-secondary)]">Loading events...</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="lg:col-span-1">
-            <div class="card p-6 rounded-xl h-full flex flex-col">
-                <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-yellow-400">Date Difference</h2>
+        <!-- FULL CALENDAR VIEW (NEW) -->
+        <div id="calendar-view" class="hidden">
+            <div class="card p-6 rounded-xl max-w-2xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="changeMonth(-1)" class="p-2 rounded-full text-[var(--text-accent)] hover:bg-[var(--bg-body)] transition">
+                        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                    </button>
+                    <h2 id="calendar-title" class="text-2xl font-bold text-[var(--text-accent)]">Month Year</h2>
+                    <button onclick="changeMonth(1)" class="p-2 rounded-full text-[var(--text-accent)] hover:bg-[var(--bg-body)] transition">
+                        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <!-- Weekday Headers -->
+                <div id="calendar-weekdays" class="grid grid-cols-7 text-center font-semibold text-sm mb-2 text-[var(--text-secondary)]">
+                    <div class="py-1">Sun</div>
+                    <div class="py-1">Mon</div>
+                    <div class="py-1">Tue</div>
+                    <div class="py-1">Wed</div>
+                    <div class="py-1">Thu</div>
+                    <div class="py-1">Fri</div>
+                    <div class="py-1">Sat</div>
+                </div>
+
+                <!-- Day Grid -->
+                <div id="calendar-grid" class="grid grid-cols-7 gap-2">
+                    <!-- Calendar days will be generated here by JavaScript -->
+                </div>
+                
+                <div id="calendar-event-details" class="mt-8 pt-4 border-t border-[var(--border-card)]">
+                    <h3 class="text-xl font-bold mb-3 text-[var(--text-countdown)]">Events This Month</h3>
+                    <ul id="current-month-events" class="space-y-2 text-sm">
+                        <li class="text-[var(--text-secondary)]">Select a date to see events.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATE DIFFERENCE VIEW -->
+        <div id="difference-view" class="hidden">
+            <div class="card p-6 rounded-xl h-full flex flex-col max-w-lg mx-auto">
+                <h2 class="text-2xl font-bold mb-4 border-b border-[var(--border-card)] pb-2 text-yellow-400">Date Difference Calculator</h2>
                 
                 <form id="difference-form" class="space-y-4 flex-grow">
                     <div>
-                        <label for="date-a" class="block mb-1 text-sm font-medium">Start Date (A)</label>
+                        <label for="date-a" class="block mb-1 text-sm font-medium text-[var(--text-primary)]">Start Date (A)</label>
                         <input type="date" id="date-a" required 
                                class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input">
                     </div>
                     <div>
-                        <label for="date-b" class="block mb-1 text-sm font-medium">End Date (B)</label>
+                        <label for="date-b" class="block mb-1 text-sm font-medium text-[var(--text-primary)]">End Date (B)</label>
                         <input type="date" id="date-b" required
                                class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input">
                     </div>
@@ -106,23 +318,24 @@
                     <button type="submit" class="w-full p-3 rounded-lg font-bold bg-yellow-600 text-white hover:bg-yellow-700 transition">Calculate Difference</button>
                 </form>
 
-                <div class="mt-6 pt-4 border-t border-gray-700 text-center">
-                    <p class="text-lg font-semibold text-gray-400">Result:</p>
-                    <p id="difference-result" class="text-3xl font-extrabold text-white mt-1">0 Days</p>
+                <div class="mt-6 pt-4 border-t border-[var(--border-card)] text-center">
+                    <p class="text-lg font-semibold text-[var(--text-secondary)]">Result:</p>
+                    <p id="difference-result" class="text-3xl font-extrabold text-[var(--text-primary)] mt-1">0 Days</p>
                 </div>
             </div>
         </div>
-    </div>
+
+    </main>
     
     <div id="status-message" class="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-lg shadow-xl hidden"></div>
 
-    <!-- Modal for Gemini Output -->
+    <!-- Modal for Gemini Output (Unchanged) -->
     <div id="llm-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-[#161b22] p-6 rounded-xl w-full max-w-xl border border-[#30363d]">
-            <h3 id="modal-title" class="text-xl font-bold mb-4 text-[#58a6ff]">Generating Details...</h3>
-            <div id="modal-content-area" class="min-h-[100px] text-gray-300">
+        <div class="bg-[var(--bg-card)] p-6 rounded-xl w-full max-w-xl border border-[var(--border-card)]">
+            <h3 id="modal-title" class="text-xl font-bold mb-4 text-[var(--text-accent)]">Generating Details...</h3>
+            <div id="modal-content-area" class="min-h-[100px] text-[var(--text-primary)]">
                 <div id="llm-loading" class="text-center">
-                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-700 h-12 w-12 mb-4 mx-auto"></div>
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-[var(--border-card)] h-12 w-12 mb-4 mx-auto"></div>
                     <p>Contacting the Time Flux AI Planner...</p>
                 </div>
                 <div id="llm-result" class="text-sm space-y-3 hidden"></div>
@@ -132,18 +345,40 @@
     </div>
 
     <script>
-        // --- Local Storage Configuration ---
+        // --- Global Configuration & State ---
         const STORAGE_KEY = 'timeFluxEvents';
-        // The API Key is still needed for the Gemini AI functionality
-        const apiKey = ""; // Canvas handles this automatically
+        const THEME_KEY = 'timeFluxTheme';
+        const apiKey = ""; 
 
         let countdownInterval;
         let trackedEvent = null;
+        let currentCalendarDate = new Date(); // New state for calendar month/year
 
-        const currentDateDisplay = document.getElementById('current-date-display');
+        // --- DOM Elements ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const views = {
+            'tracker-view': document.getElementById('tracker-view'),
+            'calendar-view': document.getElementById('calendar-view'), // New View
+            'difference-view': document.getElementById('difference-view'),
+        };
+        const navButtons = {
+            'tracker-view': document.getElementById('nav-tracker'),
+            'calendar-view': document.getElementById('nav-calendar'), // New Button
+            'difference-view': document.getElementById('nav-difference'),
+        };
+        // Calendar elements (Tear-Away)
+        const calendarTop = document.getElementById('calendar-top');
+        const calendarDay = document.getElementById('calendar-day');
+        const calendarBottom = document.getElementById('calendar-bottom');
+        // Calendar elements (Full View)
+        const calendarTitle = document.getElementById('calendar-title');
+        const calendarGrid = document.getElementById('calendar-grid');
+        const currentMonthEventsList = document.getElementById('current-month-events');
+        
+        // ... (other element references remain the same)
+        const eventsList = document.getElementById('events-list');
         const eventForm = document.getElementById('event-form');
         const differenceForm = document.getElementById('difference-form');
-        const eventsList = document.getElementById('events-list');
         const daysEl = document.getElementById('days');
         const hoursEl = document.getElementById('hours');
         const minutesEl = document.getElementById('minutes');
@@ -151,22 +386,192 @@
         const eventNameDisplay = document.getElementById('event-name-display');
         const differenceResultEl = document.getElementById('difference-result');
         const statusMessageEl = document.getElementById('status-message');
-        
-        // LLM Modal Elements
         const llmModal = document.getElementById('llm-modal');
         const modalTitle = document.getElementById('modal-title');
         const llmLoading = document.getElementById('llm-loading');
         const llmResult = document.getElementById('llm-result');
 
-        // --- Local Storage Utility Functions ---
+        // --- Theme Switching Logic (Unchanged) ---
+        window.switchTheme = function() {
+            const isLight = document.body.classList.toggle('theme-light');
+            const newTheme = isLight ? 'light' : 'dark';
+            localStorage.setItem(THEME_KEY, newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+            if (savedTheme === 'light') {
+                document.body.classList.add('theme-light');
+            }
+            updateThemeIcon(savedTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const iconName = theme === 'dark' ? 'sun' : 'moon';
+            themeToggle.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
+            lucide.createIcons();
+        }
+
+        // --- View Switching Logic (Updated for 3 views) ---
+        window.switchView = function(viewId) {
+            // 1. Hide all views and deactivate all buttons
+            Object.keys(views).forEach(id => {
+                views[id].classList.add('hidden');
+                navButtons[id]?.classList.remove('active');
+            });
+
+            // 2. Show the target view and activate the corresponding button
+            if (views[viewId]) {
+                views[viewId].classList.remove('hidden');
+                navButtons[viewId]?.classList.add('active');
+            }
+            
+            // 3. Special case handling
+            if (viewId === 'tracker-view') {
+                loadEvents();
+            } else if (viewId === 'calendar-view') {
+                renderCalendar(currentCalendarDate);
+            }
+        }
+        
+        // --- Tear-Away Calendar Logic (Unchanged) ---
+        function updateCurrentDateTime() {
+            const now = new Date();
+            const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+            const monthName = now.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+            const dayOfMonth = now.getDate();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+            calendarTop.textContent = `${dayName} | ${time}`;
+            calendarDay.textContent = dayOfMonth.toString();
+            calendarBottom.textContent = monthName + " " + now.getFullYear();
+        }
+
+        // --- Full Calendar View Logic (NEW) ---
+        
+        /**
+         * Renders the calendar grid for the month/year of the given date object.
+         */
+        function renderCalendar(date) {
+            currentCalendarDate = date; // Update global state
+            calendarGrid.innerHTML = '';
+            
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            const today = new Date();
+            const todayDay = today.getDate();
+            const todayMonth = today.getMonth();
+            const todayYear = today.getFullYear();
+
+            // Set the title
+            calendarTitle.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            // 1. Determine first day of the month and number of days
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0=Sunday, 6=Saturday
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // 2. Load and format all saved events for easy lookup
+            const savedEvents = getEventsFromLocalStorage().map(e => ({
+                name: e.name,
+                date: new Date(e.targetDate)
+            })).filter(e => 
+                e.date.getMonth() === month && e.date.getFullYear() === year
+            );
+            
+            // Helper to get events for a specific day
+            const getEventsForDay = (dayNum) => {
+                return savedEvents.filter(e => e.date.getDate() === dayNum);
+            };
+
+            // 3. Render empty cells (padding for the first week)
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day-cell empty-day';
+                calendarGrid.appendChild(emptyCell);
+            }
+
+            // 4. Render day cells
+            for (let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('div');
+                cell.textContent = day;
+                
+                let classes = ['calendar-day-cell', 'text-sm', 'sm:text-lg', 'font-semibold'];
+                
+                const eventsOnThisDay = getEventsForDay(day);
+                
+                // Check if today
+                if (day === todayDay && month === todayMonth && year === todayYear) {
+                    classes.push('today-day');
+                }
+                
+                // Check if there are events
+                if (eventsOnThisDay.length > 0) {
+                    classes.push('event-day', 'cursor-pointer');
+                    
+                    // Attach event data for detail view
+                    const eventTitles = eventsOnThisDay.map(e => e.name).join(', ');
+                    cell.setAttribute('title', `Events: ${eventTitles}`);
+                    cell.addEventListener('click', () => displayDayEvents(eventsOnThisDay, day));
+                }
+
+                cell.className = classes.join(' ');
+                calendarGrid.appendChild(cell);
+            }
+            
+            // 5. Display list of all events for the current month
+            displayMonthEvents(savedEvents);
+        }
+
+        /**
+         * Changes the displayed month and re-renders the calendar.
+         */
+        window.changeMonth = function(delta) {
+            const newDate = new Date(currentCalendarDate.getTime());
+            newDate.setMonth(newDate.getMonth() + delta);
+            renderCalendar(newDate);
+        }
+        
+        /**
+         * Displays the list of all events in the current view month.
+         */
+        function displayMonthEvents(events) {
+            currentMonthEventsList.innerHTML = '';
+            
+            if (events.length === 0) {
+                currentMonthEventsList.innerHTML = `<li class="text-[var(--text-secondary)]">No saved events this month.</li>`;
+                return;
+            }
+
+            events.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+            events.forEach(event => {
+                const li = document.createElement('li');
+                const dateString = event.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                li.innerHTML = `<span class="text-[var(--text-accent)] font-bold mr-2">${dateString}:</span> ${event.name}`;
+                currentMonthEventsList.appendChild(li);
+            });
+        }
+        
+        /**
+         * Displays a temporary message about events on a clicked day.
+         */
+        function displayDayEvents(events, day) {
+            if (events.length === 0) return;
+            
+            const titles = events.map(e => e.name).join(', ');
+            showStatus(`Day ${day} events: ${titles}`, false);
+        }
+
+
+        // --- (All other data/API/form logic remains the same) ---
+
         function getEventsFromLocalStorage() {
             const stored = localStorage.getItem(STORAGE_KEY);
-            // Parse JSON, or return an empty array if nothing is found
             return stored ? JSON.parse(stored) : [];
         }
 
         function saveEventsToLocalStorage(events) {
-            // Stringify the array before saving it to localStorage
             localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
         }
 
@@ -188,27 +593,17 @@
             llmModal.classList.remove('hidden');
         }
 
-        function hideLLMModal() {
+        window.hideLLMModal = function() { 
             llmModal.classList.add('hidden');
         }
 
-        // --- Firebase Init function removed as it is no longer used. ---
-
-        function updateCurrentDateTime() {
-            const now = new Date();
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-            currentDateDisplay.textContent = now.toLocaleDateString('en-US', options);
-        }
-
         function updateCountdown() {
-            // trackedEvent.targetDate is now a Date object
             if (!trackedEvent || !trackedEvent.targetDate) {
                 eventNameDisplay.textContent = "Select an event to start countdown...";
                 daysEl.textContent = hoursEl.textContent = minutesEl.textContent = secondsEl.textContent = "00";
                 return;
             }
 
-            // Get time from Date object
             const targetTime = trackedEvent.targetDate.getTime();
             const now = new Date().getTime();
             const distance = targetTime - now;
@@ -240,6 +635,7 @@
             }
             updateCountdown(); 
             countdownInterval = setInterval(updateCountdown, 1000);
+            switchView('tracker-view'); 
         }
 
         eventForm.addEventListener('submit', async (e) => {
@@ -252,14 +648,13 @@
 
             const docId = name.toLowerCase().replace(/\s/g, '_') + '_' + Date.now();
             const targetDate = new Date(dateStr);
-            // Ensure the time is set to midnight UTC for consistent day calculations
             targetDate.setUTCHours(0, 0, 0, 0); 
             
             try {
                 const eventData = {
-                    id: docId, // Unique ID for deletion
+                    id: docId, 
                     name: name,
-                    targetDate: targetDate.getTime(), // Store as a Unix timestamp (number)
+                    targetDate: targetDate.getTime(), 
                     createdAt: new Date().getTime(),
                 };
                 
@@ -269,7 +664,8 @@
 
                 showStatus(`Event '${name}' saved successfully!`);
                 eventForm.reset();
-                loadEvents(); // Reload the list to show the new event
+                startCountdown({...eventData, targetDate: targetDate}); 
+                renderCalendar(currentCalendarDate); // Re-render calendar to show new event
             } catch (error) {
                 console.error("Error saving event:", error);
                 showStatus("Failed to save event.", true);
@@ -279,37 +675,33 @@
         function loadEvents() {
             eventsList.innerHTML = '';
             
-            // 1. Fetch raw data from localStorage
             const rawEvents = getEventsFromLocalStorage();
 
             if (rawEvents.length === 0) {
-                eventsList.innerHTML = '<p class="text-gray-500">No events saved yet. Add one above!</p>';
+                eventsList.innerHTML = '<p class="text-[var(--text-secondary)]">No events saved yet. Add one above!</p>';
                 return;
             }
             
-            // 2. Process data: convert timestamp back to Date object for use
             const events = rawEvents.map(event => ({
                 ...event,
                 targetDate: new Date(event.targetDate) 
             }));
 
-            // 3. Sort by target date
             events.sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
 
-            // 4. Render the events list
             events.forEach((event) => {
                 const dateStr = event.targetDate.toLocaleDateString();
                 const item = document.createElement('div');
-                item.className = 'flex justify-between items-center p-3 rounded-lg bg-[#20252c] hover:bg-[#282d36]';
+                item.className = 'flex justify-between items-center p-3 rounded-lg bg-[var(--bg-body)] hover:bg-[var(--bg-countdown)]';
                 
                 item.innerHTML = `
                     <div>
-                        <p class="font-semibold text-white">${event.name}</p>
-                        <p class="text-sm text-gray-400">${dateStr}</p>
+                        <p class="font-semibold text-[var(--text-primary)]">${event.name}</p>
+                        <p class="text-sm text-[var(--text-secondary)]">${dateStr}</p>
                     </div>
                     <div class="space-x-2 flex items-center">
                         <button data-id="${event.id}" data-action="generate" class="text-purple-400 hover:text-purple-300 text-sm font-medium p-1 rounded-md bg-purple-900/50 hover:bg-purple-900 transition">✨ Details</button>
-                        <button data-id="${event.id}" data-action="track" class="text-blue-400 hover:text-blue-300 text-sm font-medium">Track</button>
+                        <button data-id="${event.id}" data-action="track" class="text-[var(--text-accent)] hover:text-blue-300 text-sm font-medium">Track</button>
                         <button data-id="${event.id}" data-action="delete" class="text-red-400 hover:text-red-300 text-sm font-medium">Delete</button>
                     </div>
                 `;
@@ -334,13 +726,13 @@
                         let eventsArray = getEventsFromLocalStorage();
                         const initialLength = eventsArray.length;
                         
-                        // Filter out the event to be deleted
                         eventsArray = eventsArray.filter(event => event.id !== eventId);
                         
                         if (eventsArray.length < initialLength) {
                             saveEventsToLocalStorage(eventsArray);
                             showStatus("Event deleted.");
-                            loadEvents(); // Refresh list after deletion
+                            loadEvents(); 
+                            renderCalendar(currentCalendarDate); // Re-render calendar after deletion
 
                             if (trackedEvent && trackedEvent.id === eventId) {
                                 trackedEvent = null;
@@ -355,22 +747,18 @@
                 });
             });
             
-            // --- Gemini Integration Listener ---
             document.querySelectorAll('[data-action="generate"]').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const eventId = e.target.dataset.id;
                     const eventToGenerate = events.find(ev => ev.id === eventId);
                     if (eventToGenerate) {
-                        // eventToGenerate.targetDate is already a Date object here
                         generateEventDetails(eventToGenerate.name, eventToGenerate.targetDate); 
                     }
                 });
             });
         }
         
-        // --- Gemini API Logic (Unchanged, still uses API key for AI) ---
-
-        // Utility for exponential backoff to handle rate limits
+        // --- Gemini API Logic (omitted for brevity, remains unchanged) ---
         async function exponentialBackoffFetch(url, options, maxRetries = 5) {
             for (let i = 0; i < maxRetries; i++) {
                 try {
@@ -379,7 +767,6 @@
                         return response;
                     } else if (response.status === 429 && i < maxRetries - 1) {
                         const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-                        console.warn(`Rate limit hit. Retrying in ${Math.round(delay/1000)}s...`);
                         await new Promise(resolve => setTimeout(resolve, delay));
                         continue;
                     } else {
@@ -388,7 +775,6 @@
                 } catch (error) {
                     if (i === maxRetries - 1) throw error;
                     const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-                    console.warn(`Fetch error. Retrying in ${Math.round(delay/1000)}s...`, error);
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
@@ -428,31 +814,22 @@
             } catch (error) {
                 console.error("Gemini API Error:", error);
                 llmResult.innerHTML = `<p class="text-red-400">Error: Failed to connect to AI Planner. Check console for details.</p>`;
-                llmResult.classList.remove('hidden');
                 llmLoading.classList.add('hidden');
             }
         }
         
-        // Simple markdown to HTML conversion for displaying the AI response nicely
         function formatMarkdownToHtml(markdownText) {
             let html = markdownText;
-            // Headers
             html = html.replace(/^### (.*$)/gim, '<h4 class="text-lg font-semibold text-white mt-3 mb-1">$1</h4>');
-            html = html.replace(/^## (.*$)/gim, '<h4 class="text-xl font-bold text-[#3fb950] mt-4 mb-2 border-b border-gray-600 pb-1">$1</h4>');
-            // Bold
+            html = html.replace(/^## (.*$)/gim, '<h4 class="text-xl font-bold text-[var(--text-countdown)] mt-4 mb-2 border-b border-[var(--border-card)] pb-1">$1</h4>');
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            // Lists
             html = html.replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc">$1</li>');
-            html = html.replace(/<li/g, '<ul><li').replace(/<\/li>(\s*<h|\s*$)/g, '</li></ul>$1'); // Basic list wrapping
-            
-            // Convert double newlines to breaks for paragraph separation
+            html = html.replace(/<li/g, '<ul><li').replace(/<\/li>(\s*<h|\s*$)/g, '</li></ul>$1'); 
             html = html.replace(/\n\n/g, '<br><br>');
-            // Remove single newlines that aren't preceded by a list or header conversion
             html = html.replace(/\n/g, ' '); 
             
             return html;
         }
-        // -----------------------------
         
         function calculateDifference(dateA, dateB) {
             const d1 = new Date(dateA);
@@ -479,10 +856,10 @@
         });
 
         window.onload = () => {
-            // No Firebase initialization needed
-            loadEvents(); 
-            updateCurrentDateTime();
-            setInterval(updateCurrentDateTime, 1000);
+            loadTheme();
+            switchView('tracker-view'); 
+            updateCurrentDateTime(); 
+            setInterval(updateCurrentDateTime, 1000); 
             updateCountdown(); 
         };
 
