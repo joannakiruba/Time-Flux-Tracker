@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Date & Countdown Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script type="module">
+        // Firebase imports have been removed to use localStorage for data persistence.
+        // Keeping this block for potential future module imports if needed.
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0d1117; color: #c9d1d9; }
+        .card { background-color: #161b22; border: 1px solid #30363d; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); transition: transform 0.2s; }
+        .btn-primary { background-color: #238636; color: white; transition: background-color 0.2s, transform 0.1s; }
+        .btn-primary:hover { background-color: #2ea043; transform: translateY(-1px); }
+        .countdown-segment { background-color: #0e4429; color: #3fb950; }
+        .input-field { background-color: #0d1117; border-color: #30363d; color: #c9d1d9; }
+        .date-input { appearance: none; }
+        
+        /* CSS for LLM Loader */
+        .loader {
+            border-top-color: #3b82f6; /* Blue 500 */
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-[#58a6ff]">Time Flux ⏱️</h1>
+        <p id="current-date-display" class="text-xl font-medium text-gray-400 mt-2"></p>
+    </header>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="lg:col-span-2 space-y-6">
+            <div class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-400">Countdown Tracker</h2>
+                <div id="countdown-display" class="text-center mb-6">
+                    <p class="text-gray-400 text-lg mb-2" id="event-name-display">Select an event to start countdown...</p>
+                    <div class="flex justify-center space-x-2 sm:space-x-4">
+                        <div class="countdown-segment p-2 sm:p-4 rounded-lg">
+                            <span id="days" class="text-3xl sm:text-5xl font-extrabold block">00</span>
+                            <span class="text-xs sm:text-sm font-semibold block mt-1">Days</span>
+                        </div>
+                        <div class="countdown-segment p-2 sm:p-4 rounded-lg">
+                            <span id="hours" class="text-3xl sm:text-5xl font-extrabold block">00</span>
+                            <span class="text-xs sm:text-sm font-semibold block mt-1">Hours</span>
+                        </div>
+                        <div class="countdown-segment p-2 sm:p-4 rounded-lg">
+                            <span id="minutes" class="text-3xl sm:text-5xl font-extrabold block">00</span>
+                            <span class="text-xs sm:text-sm font-semibold block mt-1">Minutes</span>
+                        </div>
+                        <div class="countdown-segment p-2 sm:p-4 rounded-lg">
+                            <span id="seconds" class="text-3xl sm:text-5xl font-extrabold block">00</span>
+                            <span class="text-xs sm:text-sm font-semibold block mt-1">Seconds</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="text-xl font-semibold mb-3">Add/Track New Event</h3>
+                <form id="event-form" class="space-y-3">
+                    <input type="text" id="event-name" placeholder="Event Name (e.g., Project Deadline)" required
+                           class="input-field w-full p-3 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
+                    <input type="date" id="target-date" required
+                           class="input-field w-full p-3 rounded-lg border focus:ring-blue-500 focus:border-blue-500 date-input">
+                    <button type="submit" class="btn-primary w-full p-3 rounded-lg font-bold">Save & Start Tracking</button>
+                </form>
+            </div>
+
+            <div class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-400">Saved Events</h2>
+                <div id="events-list" class="space-y-3">
+                    <p class="text-gray-500">Loading events...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1">
+            <div class="card p-6 rounded-xl h-full flex flex-col">
+                <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-yellow-400">Date Difference</h2>
+                
+                <form id="difference-form" class="space-y-4 flex-grow">
+                    <div>
+                        <label for="date-a" class="block mb-1 text-sm font-medium">Start Date (A)</label>
+                        <input type="date" id="date-a" required 
+                               class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input">
+                    </div>
+                    <div>
+                        <label for="date-b" class="block mb-1 text-sm font-medium">End Date (B)</label>
+                        <input type="date" id="date-b" required
+                               class="input-field w-full p-3 rounded-lg border focus:ring-yellow-500 focus:border-yellow-500 date-input">
+                    </div>
+                    
+                    <button type="submit" class="w-full p-3 rounded-lg font-bold bg-yellow-600 text-white hover:bg-yellow-700 transition">Calculate Difference</button>
+                </form>
+
+                <div class="mt-6 pt-4 border-t border-gray-700 text-center">
+                    <p class="text-lg font-semibold text-gray-400">Result:</p>
+                    <p id="difference-result" class="text-3xl font-extrabold text-white mt-1">0 Days</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="status-message" class="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-lg shadow-xl hidden"></div>
+
+    <!-- Modal for Gemini Output -->
+    <div id="llm-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#161b22] p-6 rounded-xl w-full max-w-xl border border-[#30363d]">
+            <h3 id="modal-title" class="text-xl font-bold mb-4 text-[#58a6ff]">Generating Details...</h3>
+            <div id="modal-content-area" class="min-h-[100px] text-gray-300">
+                <div id="llm-loading" class="text-center">
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-700 h-12 w-12 mb-4 mx-auto"></div>
+                    <p>Contacting the Time Flux AI Planner...</p>
+                </div>
+                <div id="llm-result" class="text-sm space-y-3 hidden"></div>
+            </div>
+            <button onclick="hideLLMModal()" class="w-full mt-6 p-3 rounded-lg font-bold bg-red-600 text-white hover:bg-red-700 transition">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Local Storage Configuration ---
+        const STORAGE_KEY = 'timeFluxEvents';
+        // The API Key is still needed for the Gemini AI functionality
+        const apiKey = ""; // Canvas handles this automatically
+
+        let countdownInterval;
+        let trackedEvent = null;
+
+        const currentDateDisplay = document.getElementById('current-date-display');
+        const eventForm = document.getElementById('event-form');
+        const differenceForm = document.getElementById('difference-form');
+        const eventsList = document.getElementById('events-list');
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        const eventNameDisplay = document.getElementById('event-name-display');
+        const differenceResultEl = document.getElementById('difference-result');
+        const statusMessageEl = document.getElementById('status-message');
+        
+        // LLM Modal Elements
+        const llmModal = document.getElementById('llm-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const llmLoading = document.getElementById('llm-loading');
+        const llmResult = document.getElementById('llm-result');
+
+        // --- Local Storage Utility Functions ---
+        function getEventsFromLocalStorage() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            // Parse JSON, or return an empty array if nothing is found
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        function saveEventsToLocalStorage(events) {
+            // Stringify the array before saving it to localStorage
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+        }
+
+        function showStatus(message, isError = false) {
+            statusMessageEl.textContent = message;
+            statusMessageEl.className = 'fixed bottom-4 right-4 p-3 rounded-lg shadow-xl';
+            statusMessageEl.classList.add(isError ? 'bg-red-600' : 'bg-blue-500', 'block');
+            setTimeout(() => {
+                statusMessageEl.classList.remove('block');
+                statusMessageEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        function showLLMModal(title) {
+            modalTitle.textContent = title;
+            llmResult.innerHTML = '';
+            llmResult.classList.add('hidden');
+            llmLoading.classList.remove('hidden');
+            llmModal.classList.remove('hidden');
+        }
+
+        function hideLLMModal() {
+            llmModal.classList.add('hidden');
+        }
+
+        // --- Firebase Init function removed as it is no longer used. ---
+
+        function updateCurrentDateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            currentDateDisplay.textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function updateCountdown() {
+            // trackedEvent.targetDate is now a Date object
+            if (!trackedEvent || !trackedEvent.targetDate) {
+                eventNameDisplay.textContent = "Select an event to start countdown...";
+                daysEl.textContent = hoursEl.textContent = minutesEl.textContent = secondsEl.textContent = "00";
+                return;
+            }
+
+            // Get time from Date object
+            const targetTime = trackedEvent.targetDate.getTime();
+            const now = new Date().getTime();
+            const distance = targetTime - now;
+
+            eventNameDisplay.textContent = `Countdown to: ${trackedEvent.name}`;
+
+            if (distance < 0) {
+                eventNameDisplay.textContent = `${trackedEvent.name} occurred!`;
+                daysEl.textContent = hoursEl.textContent = minutesEl.textContent = secondsEl.textContent = "🎉";
+                clearInterval(countdownInterval);
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            daysEl.textContent = days.toString().padStart(2, '0');
+            hoursEl.textContent = hours.toString().padStart(2, '0');
+            minutesEl.textContent = minutes.toString().padStart(2, '0');
+            secondsEl.textContent = seconds.toString().padStart(2, '0');
+        }
+
+        function startCountdown(event) {
+            trackedEvent = event;
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            updateCountdown(); 
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        eventForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('event-name').value.trim();
+            const dateStr = document.getElementById('target-date').value;
+            
+            if (!name || !dateStr) return;
+
+            const docId = name.toLowerCase().replace(/\s/g, '_') + '_' + Date.now();
+            const targetDate = new Date(dateStr);
+            // Ensure the time is set to midnight UTC for consistent day calculations
+            targetDate.setUTCHours(0, 0, 0, 0); 
+            
+            try {
+                const eventData = {
+                    id: docId, // Unique ID for deletion
+                    name: name,
+                    targetDate: targetDate.getTime(), // Store as a Unix timestamp (number)
+                    createdAt: new Date().getTime(),
+                };
+                
+                const events = getEventsFromLocalStorage();
+                events.push(eventData);
+                saveEventsToLocalStorage(events);
+
+                showStatus(`Event '${name}' saved successfully!`);
+                eventForm.reset();
+                loadEvents(); // Reload the list to show the new event
+            } catch (error) {
+                console.error("Error saving event:", error);
+                showStatus("Failed to save event.", true);
+            }
+        });
+        
+        function loadEvents() {
+            eventsList.innerHTML = '';
+            
+            // 1. Fetch raw data from localStorage
+            const rawEvents = getEventsFromLocalStorage();
+
+            if (rawEvents.length === 0) {
+                eventsList.innerHTML = '<p class="text-gray-500">No events saved yet. Add one above!</p>';
+                return;
+            }
+            
+            // 2. Process data: convert timestamp back to Date object for use
+            const events = rawEvents.map(event => ({
+                ...event,
+                targetDate: new Date(event.targetDate) 
+            }));
+
+            // 3. Sort by target date
+            events.sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
+
+            // 4. Render the events list
+            events.forEach((event) => {
+                const dateStr = event.targetDate.toLocaleDateString();
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center p-3 rounded-lg bg-[#20252c] hover:bg-[#282d36]';
+                
+                item.innerHTML = `
+                    <div>
+                        <p class="font-semibold text-white">${event.name}</p>
+                        <p class="text-sm text-gray-400">${dateStr}</p>
+                    </div>
+                    <div class="space-x-2 flex items-center">
+                        <button data-id="${event.id}" data-action="generate" class="text-purple-400 hover:text-purple-300 text-sm font-medium p-1 rounded-md bg-purple-900/50 hover:bg-purple-900 transition">✨ Details</button>
+                        <button data-id="${event.id}" data-action="track" class="text-blue-400 hover:text-blue-300 text-sm font-medium">Track</button>
+                        <button data-id="${event.id}" data-action="delete" class="text-red-400 hover:text-red-300 text-sm font-medium">Delete</button>
+                    </div>
+                `;
+                eventsList.appendChild(item);
+            });
+            
+            // --- Event Listeners for the List ---
+            document.querySelectorAll('[data-action="track"]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const eventId = e.target.dataset.id;
+                    const eventToTrack = events.find(ev => ev.id === eventId);
+                    if (eventToTrack) {
+                        startCountdown(eventToTrack);
+                    }
+                });
+            });
+
+            document.querySelectorAll('[data-action="delete"]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const eventId = e.target.dataset.id;
+                    try {
+                        let eventsArray = getEventsFromLocalStorage();
+                        const initialLength = eventsArray.length;
+                        
+                        // Filter out the event to be deleted
+                        eventsArray = eventsArray.filter(event => event.id !== eventId);
+                        
+                        if (eventsArray.length < initialLength) {
+                            saveEventsToLocalStorage(eventsArray);
+                            showStatus("Event deleted.");
+                            loadEvents(); // Refresh list after deletion
+
+                            if (trackedEvent && trackedEvent.id === eventId) {
+                                trackedEvent = null;
+                                clearInterval(countdownInterval);
+                                updateCountdown();
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error deleting event:", error);
+                        showStatus("Failed to delete event.", true);
+                    }
+                });
+            });
+            
+            // --- Gemini Integration Listener ---
+            document.querySelectorAll('[data-action="generate"]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const eventId = e.target.dataset.id;
+                    const eventToGenerate = events.find(ev => ev.id === eventId);
+                    if (eventToGenerate) {
+                        // eventToGenerate.targetDate is already a Date object here
+                        generateEventDetails(eventToGenerate.name, eventToGenerate.targetDate); 
+                    }
+                });
+            });
+        }
+        
+        // --- Gemini API Logic (Unchanged, still uses API key for AI) ---
+
+        // Utility for exponential backoff to handle rate limits
+        async function exponentialBackoffFetch(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        return response;
+                    } else if (response.status === 429 && i < maxRetries - 1) {
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        console.warn(`Rate limit hit. Retrying in ${Math.round(delay/1000)}s...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    } else {
+                        throw new Error(`API failed with status ${response.status}: ${await response.text()}`);
+                    }
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                    console.warn(`Fetch error. Retrying in ${Math.round(delay/1000)}s...`, error);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            throw new Error("API request failed after multiple retries.");
+        }
+
+        async function generateEventDetails(eventName, targetDate) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const userQuery = `You are an imaginative event planner. Generate three distinct, creative suggestions for the event titled: "${eventName}" happening on ${targetDate.toDateString()}. 
+                For each suggestion, include a suggested theme, a short activity idea, and a tone-setting opening message/invitation draft. Format the output using markdown headers for clarity.`;
+            
+            const systemPrompt = "Act as a concise and creative event planning assistant. Provide your suggestions in a clear, formatted text block.";
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const options = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            };
+            
+            showLLMModal(`Generating Ideas for: ${eventName}`);
+
+            try {
+                const response = await exponentialBackoffFetch(apiUrl, options);
+                const result = await response.json();
+                
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate details. Please try again.";
+
+                llmResult.innerHTML = formatMarkdownToHtml(text);
+                llmResult.classList.remove('hidden');
+                llmLoading.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                llmResult.innerHTML = `<p class="text-red-400">Error: Failed to connect to AI Planner. Check console for details.</p>`;
+                llmResult.classList.remove('hidden');
+                llmLoading.classList.add('hidden');
+            }
+        }
+        
+        // Simple markdown to HTML conversion for displaying the AI response nicely
+        function formatMarkdownToHtml(markdownText) {
+            let html = markdownText;
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h4 class="text-lg font-semibold text-white mt-3 mb-1">$1</h4>');
+            html = html.replace(/^## (.*$)/gim, '<h4 class="text-xl font-bold text-[#3fb950] mt-4 mb-2 border-b border-gray-600 pb-1">$1</h4>');
+            // Bold
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Lists
+            html = html.replace(/^\* (.*$)/gim, '<li class="ml-4 list-disc">$1</li>');
+            html = html.replace(/<li/g, '<ul><li').replace(/<\/li>(\s*<h|\s*$)/g, '</li></ul>$1'); // Basic list wrapping
+            
+            // Convert double newlines to breaks for paragraph separation
+            html = html.replace(/\n\n/g, '<br><br>');
+            // Remove single newlines that aren't preceded by a list or header conversion
+            html = html.replace(/\n/g, ' '); 
+            
+            return html;
+        }
+        // -----------------------------
+        
+        function calculateDifference(dateA, dateB) {
+            const d1 = new Date(dateA);
+            const d2 = new Date(dateB);
+
+            d1.setUTCHours(0, 0, 0, 0);
+            d2.setUTCHours(0, 0, 0, 0);
+
+            const diffTime = Math.abs(d2.getTime() - d1.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
+        }
+
+        differenceForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const dateA = document.getElementById('date-a').value;
+            const dateB = document.getElementById('date-b').value;
+
+            if (dateA && dateB) {
+                const days = calculateDifference(dateA, dateB);
+                differenceResultEl.textContent = `${days} Days`;
+            }
+        });
+
+        window.onload = () => {
+            // No Firebase initialization needed
+            loadEvents(); 
+            updateCurrentDateTime();
+            setInterval(updateCurrentDateTime, 1000);
+            updateCountdown(); 
+        };
+
+    </script>
+</body>
+</html>
